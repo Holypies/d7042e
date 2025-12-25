@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+  "time"
 
 	arrowhead "github.com/johankristianss/arrowhead/pkg/arrowhead"
 )
@@ -17,28 +18,34 @@ func checkError(err error) {
 	}
 }
 
+func pollingService(framework arrowhead.Framework,sensor *Sensor){
+	
+	for {
+
+    res, err := framework.SendRequest("get-sensor-status", arrowhead.EmptyParams())
+    checkError(err)
+    
+    err = json.Unmarshal(res, &sensor)
+    checkError(err)
+    fmt.Printf("Current sensor status: %s\n", sensor.Status)
+		time.Sleep(1*time.Second)
+		
+	}
+
+
+}
+
+
+
 func main() {
     framework, err := arrowhead.CreateFramework()
     checkError(err)
 
-    // For POST services: never use EmptyParams() directly
-    params := arrowhead.EmptyParams()
-		car := Sensor{Status: "False"}
-
-		carJSON, err := json.Marshal(car)
-		checkError(err)
-		params.Payload = carJSON
-    // Toggle the sensor
-    _, err = framework.SendRequest("update-sensor-status", params)
-    checkError(err)
-    fmt.Println("Sensor toggled successfully")
-
-    // Now GET the current status
-    res, err := framework.SendRequest("get-sensor-status", arrowhead.EmptyParams())
-    checkError(err)
-
     var sensor Sensor
-    err = json.Unmarshal(res, &sensor)
-    checkError(err)
-    fmt.Printf("Current sensor status: %s\n", sensor.Status)
+  	go pollingService(*framework,&sensor)
+    
+
+    err = framework.ServeForever()
+	  checkError(err)
+
 }
