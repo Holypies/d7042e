@@ -2,7 +2,10 @@ module myproject
 
 go 1.25.4
 
-require github.com/johankristianss/arrowhead v0.0.0-20250506143351-998b1cce1729
+require (
+	github.com/johankristianss/arrowhead v0.0.0-20250506143351-998b1cce1729
+	github.com/simonvetter/modbus v1.6.4
+)
 
 require (
 	github.com/bytedance/sonic v1.12.6 // indirect
@@ -16,6 +19,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.23.0 // indirect
+	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
