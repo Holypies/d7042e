@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-	"sync"
 	"log"
+	"sync"
+	"time"
 
-	"github.com/simonvetter/modbus"
 	arrowhead "github.com/johankristianss/arrowhead/pkg/arrowhead"
 	"github.com/johankristianss/arrowhead/pkg/rpc"
+	"github.com/simonvetter/modbus"
 )
 
 type Sensor struct {
@@ -20,6 +20,7 @@ type InMemorySensorRepository struct {
 	sync.RWMutex
 	sensor *Sensor
 }
+
 func (r *InMemorySensorRepository) GetStatus() string {
 	r.RLock() // Lock for reading
 	defer r.RUnlock()
@@ -46,7 +47,7 @@ func (s *UpdateSensorService) HandleRequest(params *arrowhead.Params) ([]byte, e
 
 	// Println. Get the current status
 	currentStatus := s.inMemorySensorRepository.sensor.Status
- 
+
 	// Toggle the status based on its current value
 	var newStatus string
 	if currentStatus == "True" {
@@ -62,7 +63,7 @@ func (s *UpdateSensorService) HandleRequest(params *arrowhead.Params) ([]byte, e
 	fmt.Printf("Sensor Status Updated: Toggled from **%s** to **%s**\n", currentStatus, newStatus)
 
 	return nil, nil
-} 
+}
 
 type GetSensorService struct {
 	inMemorySensorRepository *InMemorySensorRepository
@@ -82,11 +83,11 @@ func checkError(err error) {
 	}
 }
 
-func pollingService(repo *InMemorySensorRepository){
+func pollingService(repo *InMemorySensorRepository) {
 	// create tcp modbus client
 	client, err := modbus.NewClient(&modbus.ClientConfiguration{
-		URL:      "tcp://localhost:5020",
-		Timeout:  1 * time.Second,
+		URL:     "tcp://localhost:5020",
+		Timeout: 1 * time.Second,
 	})
 	if err != nil {
 		log.Fatalf("Configuration error: %v", err)
@@ -110,32 +111,28 @@ func pollingService(repo *InMemorySensorRepository){
 			log.Fatalf("Read failed: %v", err)
 		}
 
-
 		var polledStatusString string
 		var polledSensorStatus = results
 
 		if polledSensorStatus {
 			polledStatusString = "True"
-		}else{
+		} else {
 			polledStatusString = "False"
 		}
 
 		// check if polled status is the same as current status and update the status if it isnt
 		currentStatus := repo.GetStatus()
-		if currentStatus != polledStatusString{
+		if currentStatus != polledStatusString {
 			repo.UpdateStatus(polledStatusString)
 			fmt.Println("Sensor status updated to: ", polledStatusString)
 		}
 
 		// poll every 1ms (plc scanrate)
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 		fmt.Println("Loop successful")
 	}
 
-
 }
-
-
 
 func main() {
 	fmt.Println("main")
@@ -143,23 +140,20 @@ func main() {
 	checkError(err)
 
 	inMemorySensorRepository := &InMemorySensorRepository{
-    sensor: &Sensor{Status: "False"},
+		sensor: &Sensor{Status: "False"},
 	}
 
 	fmt.Println("1")
 	// monitor sensor in background
 	go pollingService(inMemorySensorRepository)
-	
+
 	updateSensorService := &UpdateSensorService{inMemorySensorRepository: inMemorySensorRepository}
 	getSensorService := &GetSensorService{inMemorySensorRepository: inMemorySensorRepository}
 
 	framework.HandleService(updateSensorService, rpc.POST, "update-sensor-status", "/magazine")
-	framework.HandleService(getSensorService, rpc.GET, "get-sensor-status", "/magazine")
+	framework.HandleService(getSensorService, rpc.GET, "esen-get-status", "/magazine")
 
 	err = framework.ServeForever()
 	checkError(err)
 
-
-
 }
-

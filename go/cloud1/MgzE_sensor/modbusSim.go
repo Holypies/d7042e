@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -34,7 +33,7 @@ func main() {
 		fmt.Printf("failed to start server: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	fmt.Println("--------------------------------------------------")
 	fmt.Println("Modbus Slave (COILS) Running on port 5020")
 	fmt.Println("Interactive Mode:")
@@ -45,14 +44,16 @@ func main() {
 
 	// manual input loop
 	scanner := bufio.NewScanner(os.Stdin)
-	
+
 	for {
 		fmt.Print("Enter Command: ")
-		if !scanner.Scan() { break }
+		if !scanner.Scan() {
+			break
+		}
 		input := strings.TrimSpace(scanner.Text())
 
-		handler.lock.Lock() 
-		
+		handler.lock.Lock()
+
 		switch input {
 		case "1":
 			handler.coilState = true
@@ -68,8 +69,8 @@ func main() {
 		default:
 			fmt.Println("Invalid command. Press 1 or 2.")
 		}
-		
-		handler.lock.Unlock() 
+
+		handler.lock.Unlock()
 	}
 }
 
@@ -87,7 +88,7 @@ type CoilHandler struct {
 func (h *CoilHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, err error) {
 	// Optional: Filter Unit ID
 	if req.UnitId != 1 {
-		// allow default 
+		// allow default
 	}
 
 	h.lock.RLock()
@@ -99,7 +100,7 @@ func (h *CoilHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, err err
 		case 0:
 			if req.IsWrite {
 				// If a client writes to us, update our state
-				h.coilState = req.Args[i] 
+				h.coilState = req.Args[i]
 				fmt.Printf("[Network Write] Client set Coil 0 to: %v\n", h.coilState)
 			}
 			res = append(res, h.coilState)
