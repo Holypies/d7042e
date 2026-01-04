@@ -35,7 +35,7 @@ func main() {
 	}
 
 	fmt.Println("--------------------------------------------------")
-	fmt.Println("Modbus Slave (COILS) Running on port 5021")
+	fmt.Println("Modbus Slave (COILS) Running on port 5026")
 	fmt.Println("Interactive Mode:")
 	fmt.Println("  [1] + Enter -> Set Sensor TRUE  (ON)")
 	fmt.Println("  [2] + Enter -> Set Sensor FALSE (OFF)")
@@ -57,10 +57,10 @@ func main() {
 		switch input {
 		case "1":
 			handler.coilState = true
-			fmt.Println(" >> STATUS UPDATED: ON (Coil 0 = true)")
+			fmt.Println(" >> STATUS UPDATED: ON")
 		case "2":
 			handler.coilState = false
-			fmt.Println(" >> STATUS UPDATED: OFF (Coil 0 = false)")
+			fmt.Println(" >> STATUS UPDATED: OFF")
 		case "q", "Q":
 			handler.lock.Unlock()
 			fmt.Println("Stopping server...")

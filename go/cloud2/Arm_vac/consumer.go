@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	arrowhead "github.com/johankristianss/arrowhead/pkg/arrowhead"
+	"github.com/johankristianss/arrowhead/pkg/rpc"
 )
 
 type Sensor struct {
@@ -13,10 +15,8 @@ type Sensor struct {
 }
 
 type Sensors struct {
-	eSensor     Sensor
-	pSensor1    Sensor
-	pSensor2    Sensor
-	vacumSensor Sensor
+	aSen1 Sensor
+	aSen2 Sensor
 }
 
 func checkError(err error) {
@@ -25,87 +25,82 @@ func checkError(err error) {
 	}
 }
 
-func pollingService(framework arrowhead.Framework, sensors *Sensors, pusher *Piston) {
+func pollingService(framework arrowhead.Framework, sensors *Sensors, vac *Vacum) {
 
 	for {
 
-		resEsen, err := framework.SendRequest("esen-get-status", arrowhead.EmptyParams())
+		resaSen1, err := framework.SendRequest("asen1-get-status", arrowhead.EmptyParams())
 		checkError(err)
-		err = json.Unmarshal(resEsen, &sensors.eSensor)
-		checkError(err)
-
-		resPsen1, err := framework.SendRequest("psen1-get-status", arrowhead.EmptyParams())
-		checkError(err)
-		err = json.Unmarshal(resPsen1, &sensors.pSensor1)
+		err = json.Unmarshal(resaSen1, &sensors.aSen1)
 		checkError(err)
 
-		resPsen2, err := framework.SendRequest("psen2-get-status", arrowhead.EmptyParams())
+		resaSen2, err := framework.SendRequest("asen2-get-status", arrowhead.EmptyParams())
 		checkError(err)
-		err = json.Unmarshal(resPsen2, &sensors.pSensor2)
+		err = json.Unmarshal(resaSen2, &sensors.aSen2)
 		checkError(err)
 
-		/* check vacum sensor (allways true when testing without cloud 2)
-			resVac, err := framework.SendRequest("get-sensor-status", arrowhead.EmptyParams())
-		    checkError(err)
-		    err = json.Unmarshal(resVac, &sensor.vacumSensor)
-		    checkError(err) */
-
-		ps1Status := sensors.pSensor1.Status
-		ps2Status := sensors.pSensor2.Status
-		esStatus := sensors.eSensor.Status
-		vacStatus := sensors.vacumSensor.Status
+		as1Status := sensors.aSen1.Status
+		as2Status := sensors.aSen2.Status
 
 		// check for start
-		if esStatus == "True" && ps1Status == "True" {
-			err = pusher.startPush()
+		if as1Status == "True" {
+			err = vac.turnOn()
 			if err != nil {
-				//log.Fatalf(err.Error())
+
 			}
-			//fmt.Println("Poll successful at start")
 		}
 
-		if ps2Status == "True" {
-			err = pusher.atEnd()
+		if as2Status == "True" {
+			err = vac.turnOff()
 			if err != nil {
-				//log.Fatalf(err.Error())
+
 			}
-			//fmt.Println("Poll successful at push")
+
 		}
-		if vacStatus == "True" {
-			err = pusher.startRetract()
-			if err != nil {
-				//log.Fatalf(err.Error())
-			}
-			//fmt.Println("Poll successful at end")
-		}
-		if esStatus == "False" && ps1Status == "True" {
-			err = pusher.atStart()
-			if err != nil {
-				//log.Fatalf(err.Error())
-			}
-			//fmt.Println("Poll successful at return")
-		}
-		fmt.Println("Current state: ", pusher.getCurrentStateAsString())
+
+		fmt.Println("Current state: ", vac.getCurrentStateAsString())
 		time.Sleep(1000 * time.Millisecond)
 
 	}
 
 }
 
+type InMemorySensorRepository struct {
+	sync.RWMutex
+	sensor *Sensor
+}
+type GetVacumService struct {
+	inMemorySensorRepository *InMemorySensorRepository
+}
+
+func (s *GetVacumService) HandleRequest(params *arrowhead.Params) ([]byte, error) {
+	sensorJSON, err := json.Marshal(s.inMemorySensorRepository.sensor)
+	if err != nil {
+		return nil, err
+	}
+	return sensorJSON, nil
+}
+
 func main() {
 	framework, err := arrowhead.CreateFramework()
 	checkError(err)
 
+	vacum := newVacum()
+
 	sensors := Sensors{
-		eSensor:     Sensor{Status: "False"},
-		pSensor1:    Sensor{Status: "False"},
-		pSensor2:    Sensor{Status: "False"},
-		vacumSensor: Sensor{Status: "True"},
+		aSen1: Sensor{Status: "False"},
+		aSen2: Sensor{Status: "False"},
 	}
 
-	piston := newPiston()
+	inMemorySensorRepository := &InMemorySensorRepository{
+		sensor: &Sensor{Status: "False"},
+	}
 
-	go pollingService(*framework, &sensors, piston)
+	go pollingService(*framework, &sensors, vacum)
+
+	getVacumService := &GetVacumService{inMemorySensorRepository: inMemorySensorRepository}
+
+	framework.HandleService(getVacumService, rpc.GET, "vac-get-status", "/arm")
 
 	err = framework.ServeForever()
 	checkError(err)

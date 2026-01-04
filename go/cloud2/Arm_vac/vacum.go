@@ -1,81 +1,50 @@
 package main
 
-type Piston struct {
-	start   State
-	push    State
-	retract State
-	end     State
-	stop    State
+type Vacum struct {
+	off State
+	on  State
 
 	currentState State
 }
 
-func newPiston() *Piston {
-	p := &Piston{}
+func newVacum() *Vacum {
+	v := &Vacum{}
 
-	startState := &startState{
-		piston: p,
+	offState := &offState{
+		vac: v,
 	}
-	pushState := &pushState{
-		piston: p,
-	}
-	endState := &endState{
-		piston: p,
-	}
-	retractState := &retractState{
-		piston: p,
-	}
-	stopState := &stopState{
-		piston: p,
+	onState := &onState{
+		vac: v,
 	}
 
-	p.start = startState
-	p.retract = retractState
-	p.push = pushState
-	p.stop = stopState
-	p.end = endState
+	v.off = offState
+	v.on = onState
 
-	p.setState(startState)
+	v.setState(offState)
 
-	return p
+	return v
 }
 
-func (p *Piston) setState(s State) {
+func (p *Vacum) setState(s State) {
 	p.currentState = s
 }
 
-func (p *Piston) getCurrentStateAsString() string {
+func (v *Vacum) getCurrentStateAsString() string {
 	currState := "state"
-	switch p.currentState {
-	case p.start:
-		currState = "Start state"
-	case p.retract:
-		currState = "Retract state"
-	case p.end:
-		currState = "End state"
-	case p.push:
-		currState = "Push state"
+	switch v.currentState {
+	case v.on:
+		currState = "ON"
+	case v.off:
+		currState = "OFF"
 	default:
 		currState = "error"
 	}
 	return currState
 }
 
-func (p *Piston) atStart() error {
-	return p.currentState.atStart()
+func (v *Vacum) turnOn() error {
+	return v.currentState.turnOn()
 }
-func (p *Piston) startPush() error {
-	return p.currentState.push()
-}
-func (p *Piston) atEnd() error {
-	return p.currentState.atEnd()
-}
-func (p *Piston) startRetract() error {
-	return p.currentState.retract()
-}
-func (p *Piston) startStop() error {
-	return p.currentState.stop()
-}
-func (p *Piston) startReset() error {
-	return p.currentState.reset()
+func (v *Vacum) turnOff() error {
+	return v.currentState.turnOff()
 }

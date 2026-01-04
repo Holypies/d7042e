@@ -145,11 +145,9 @@ func main() {
 	// monitor sensor in background
 	go pollingService(inMemorySensorRepository)
 
-	//updateSensorService := &UpdateSensorService{inMemorySensorRepository: inMemorySensorRepository}
 	getSensorService := &GetSensorService{inMemorySensorRepository: inMemorySensorRepository}
 
-	//framework.HandleService(updateSensorService, rpc.POST, "update-sensor-status", "/magazine")
-	framework.HandleService(getSensorService, rpc.GET, "psen1-get-status", "/magazine")
+	framework.HandleService(getSensorService, rpc.GET, "asen2-get-status", "/arm")
 
 	err = framework.ServeForever()
 	checkError(err)

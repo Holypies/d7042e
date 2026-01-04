@@ -35,7 +35,7 @@ func main() {
 	}
 
 	fmt.Println("--------------------------------------------------")
-	fmt.Println("Modbus Slave (COILS) Running on port 5021")
+	fmt.Println("Modbus Slave (COILS) Running on port 5025")
 	fmt.Println("Interactive Mode:")
 	fmt.Println("  [1] + Enter -> Set Sensor TRUE  (ON)")
 	fmt.Println("  [2] + Enter -> Set Sensor FALSE (OFF)")

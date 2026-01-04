@@ -33,38 +33,6 @@ func (r *InMemorySensorRepository) UpdateStatus(newStatus string) {
 	r.sensor.Status = newStatus
 }
 
-type UpdateSensorService struct {
-	inMemorySensorRepository *InMemorySensorRepository
-}
-
-func (s *UpdateSensorService) HandleRequest(params *arrowhead.Params) ([]byte, error) {
-	fmt.Println("UpdateSensorService called, triggering status toggle.")
-
-	// Check for proper initialization (Guardrail against nil pointer panic)
-	if s.inMemorySensorRepository.sensor == nil {
-		return nil, fmt.Errorf("repository sensor is not initialized (nil)")
-	}
-
-	// Println. Get the current status
-	currentStatus := s.inMemorySensorRepository.sensor.Status
-
-	// Toggle the status based on its current value
-	var newStatus string
-	if currentStatus == "True" {
-		newStatus = "False"
-	} else {
-		// This handles "False" and the initial zero-value state ""
-		newStatus = "True"
-	}
-	fmt.Println("2")
-	// Update the persistent state in the repository
-	s.inMemorySensorRepository.sensor.Status = newStatus
-
-	fmt.Printf("Sensor Status Updated: Toggled from **%s** to **%s**\n", currentStatus, newStatus)
-
-	return nil, nil
-}
-
 type GetSensorService struct {
 	inMemorySensorRepository *InMemorySensorRepository
 }
@@ -99,7 +67,7 @@ func pollingService(repo *InMemorySensorRepository) {
 		log.Fatalf("Connection failed: %v", err)
 	}
 	defer client.Close() // Close connection when done
-	fmt.Println("Connected to Modbus server at localhost:5021")
+	fmt.Println("Connected to Modbus server at localhost:5025")
 
 	// Read from coil 0
 	var regAddr uint16 = 0
@@ -145,11 +113,9 @@ func main() {
 	// monitor sensor in background
 	go pollingService(inMemorySensorRepository)
 
-	//updateSensorService := &UpdateSensorService{inMemorySensorRepository: inMemorySensorRepository}
 	getSensorService := &GetSensorService{inMemorySensorRepository: inMemorySensorRepository}
 
-	//framework.HandleService(updateSensorService, rpc.POST, "update-sensor-status", "/magazine")
-	framework.HandleService(getSensorService, rpc.GET, "psen1-get-status", "/magazine")
+	framework.HandleService(getSensorService, rpc.GET, "asen1-get-status", "/arm")
 
 	err = framework.ServeForever()
 	checkError(err)
