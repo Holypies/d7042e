@@ -129,7 +129,6 @@ func pollingService(repo *InMemorySensorRepository) {
 
 		// poll every 1ms (plc scanrate)
 		time.Sleep(1 * time.Second)
-		fmt.Println("Loop successful")
 	}
 
 }

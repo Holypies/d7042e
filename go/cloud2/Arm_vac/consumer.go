@@ -25,8 +25,8 @@ func checkError(err error) {
 	}
 }
 
-func pollingService(framework arrowhead.Framework, sensors *Sensors, vac *Vacum) {
-
+func pollingService(framework arrowhead.Framework, sensors *Sensors, vac *Vacum, vac_sen *InMemorySensorRepository) {
+	fmt.Println("Current state: ", vac.getCurrentStateAsString())
 	for {
 
 		resaSen1, err := framework.SendRequest("asen1-get-status", arrowhead.EmptyParams())
@@ -42,9 +42,11 @@ func pollingService(framework arrowhead.Framework, sensors *Sensors, vac *Vacum)
 		as1Status := sensors.aSen1.Status
 		as2Status := sensors.aSen2.Status
 
+		old_state := vac.getCurrentStateAsString()
 		// check for start
 		if as1Status == "True" {
 			err = vac.turnOn()
+			vac_sen.sensor.Status = "True"
 			if err != nil {
 
 			}
@@ -52,13 +54,16 @@ func pollingService(framework arrowhead.Framework, sensors *Sensors, vac *Vacum)
 
 		if as2Status == "True" {
 			err = vac.turnOff()
+			vac_sen.sensor.Status = "False"
 			if err != nil {
 
 			}
 
 		}
 
-		fmt.Println("Current state: ", vac.getCurrentStateAsString())
+		if vac.getCurrentStateAsString() != old_state {
+			fmt.Println("Current state: ", vac.getCurrentStateAsString())
+		}
 		time.Sleep(1000 * time.Millisecond)
 
 	}
@@ -96,7 +101,7 @@ func main() {
 		sensor: &Sensor{Status: "False"},
 	}
 
-	go pollingService(*framework, &sensors, vacum)
+	go pollingService(*framework, &sensors, vacum, inMemorySensorRepository)
 
 	getVacumService := &GetVacumService{inMemorySensorRepository: inMemorySensorRepository}
 

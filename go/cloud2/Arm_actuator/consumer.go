@@ -13,9 +13,9 @@ type Sensor struct {
 }
 
 type Sensors struct {
-	eSensor     Sensor
-	pSensor1    Sensor
 	pSensor2    Sensor
+	aSensor1    Sensor
+	aSensor2    Sensor
 	vacumSensor Sensor
 }
 
@@ -25,67 +25,74 @@ func checkError(err error) {
 	}
 }
 
-func pollingService(framework arrowhead.Framework, sensors *Sensors, pusher *Piston) {
-
+func pollingService(framework arrowhead.Framework, sensors *Sensors, arm *Arm) {
+	fmt.Println("Current state: ", arm.getCurrentStateAsString())
 	for {
+		
+			resPsen2, err := framework.SendRequest("psen2-get-status", arrowhead.EmptyParams())
+			checkError(err)
+			err = json.Unmarshal(resPsen2, &sensors.pSensor2)
+			checkError(err)
+		
 
-		resEsen, err := framework.SendRequest("esen-get-status", arrowhead.EmptyParams())
+		resAsen1, err := framework.SendRequest("asen1-get-status", arrowhead.EmptyParams())
 		checkError(err)
-		err = json.Unmarshal(resEsen, &sensors.eSensor)
-		checkError(err)
-
-		resPsen1, err := framework.SendRequest("psen1-get-status", arrowhead.EmptyParams())
-		checkError(err)
-		err = json.Unmarshal(resPsen1, &sensors.pSensor1)
-		checkError(err)
-
-		resPsen2, err := framework.SendRequest("psen2-get-status", arrowhead.EmptyParams())
-		checkError(err)
-		err = json.Unmarshal(resPsen2, &sensors.pSensor2)
+		err = json.Unmarshal(resAsen1, &sensors.aSensor1)
 		checkError(err)
 
-		/* check vacum sensor (allways true when testing without cloud 2)
-			resVac, err := framework.SendRequest("get-sensor-status", arrowhead.EmptyParams())
-		    checkError(err)
-		    err = json.Unmarshal(resVac, &sensor.vacumSensor)
-		    checkError(err) */
+		resAsen2, err := framework.SendRequest("asen2-get-status", arrowhead.EmptyParams())
+		checkError(err)
+		err = json.Unmarshal(resAsen2, &sensors.aSensor2)
+		checkError(err)
 
-		ps1Status := sensors.pSensor1.Status
+		resVac, err := framework.SendRequest("vac-get-status", arrowhead.EmptyParams())
+		checkError(err)
+		err = json.Unmarshal(resVac, &sensors.vacumSensor)
+		checkError(err)
+
 		ps2Status := sensors.pSensor2.Status
-		esStatus := sensors.eSensor.Status
+		as1Status := sensors.aSensor1.Status
+		as2Status := sensors.aSensor2.Status
 		vacStatus := sensors.vacumSensor.Status
 
-		// check for start
-		if esStatus == "True" && ps1Status == "True" {
-			err = pusher.startPush()
+		old_state := arm.getCurrentStateAsString()
+		if ps2Status == "True" && vacStatus == "False" {
+			err = arm.moveCounterClockwise()
+			if err != nil {
+				//log.Fatalf(err.Error())
+			}
+			//fmt.Println("intra cloud success")
+		}
+
+		if as1Status == "True" {
+			err = arm.atPickup()
+			// start vac
 			if err != nil {
 				//log.Fatalf(err.Error())
 			}
 			//fmt.Println("Poll successful at start")
 		}
 
-		if ps2Status == "True" {
-			err = pusher.atEnd()
+		if vacStatus == "True" {
+			err = arm.moveClockwise()
 			if err != nil {
 				//log.Fatalf(err.Error())
 			}
 			//fmt.Println("Poll successful at push")
 		}
-		if vacStatus == "True" {
-			err = pusher.startRetract()
+		if as2Status == "True" {
+			err = arm.atStart()
+			// vacum off
 			if err != nil {
 				//log.Fatalf(err.Error())
 			}
 			//fmt.Println("Poll successful at end")
 		}
-		if esStatus == "False" && ps1Status == "True" {
-			err = pusher.atStart()
-			if err != nil {
-				//log.Fatalf(err.Error())
-			}
-			//fmt.Println("Poll successful at return")
+
+		if arm.getCurrentStateAsString() != old_state {
+			fmt.Println("Current state: ", arm.getCurrentStateAsString())
 		}
-		fmt.Println("Current state: ", pusher.getCurrentStateAsString())
+
 		time.Sleep(1000 * time.Millisecond)
 
 	}
@@ -97,15 +104,15 @@ func main() {
 	checkError(err)
 
 	sensors := Sensors{
-		eSensor:     Sensor{Status: "False"},
-		pSensor1:    Sensor{Status: "False"},
 		pSensor2:    Sensor{Status: "False"},
-		vacumSensor: Sensor{Status: "True"},
+		aSensor1:    Sensor{Status: "False"},
+		aSensor2:    Sensor{Status: "False"},
+		vacumSensor: Sensor{Status: "False"},
 	}
 
-	piston := newPiston()
+	arm := newArm()
 
-	go pollingService(*framework, &sensors, piston)
+	go pollingService(*framework, &sensors, arm)
 
 	err = framework.ServeForever()
 	checkError(err)

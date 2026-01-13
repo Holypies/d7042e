@@ -95,9 +95,9 @@ func pollingService(repo *InMemorySensorRepository) {
 			fmt.Println("Sensor status updated to: ", polledStatusString)
 		}
 
-		// poll every 1ms (plc scanrate)
+		// poll every 1s (plc scanrate)
 		time.Sleep(1 * time.Second)
-		fmt.Println("Loop successful")
+		//fmt.Println("Loop successful")
 	}
 
 }

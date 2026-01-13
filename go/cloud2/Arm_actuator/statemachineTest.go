@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func main() {
+func test() {
 	arm := newArm()
 
 	fmt.Println("at state: ", arm.getCurrentStateAsString())

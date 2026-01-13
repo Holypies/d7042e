@@ -1,0 +1,20 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = mgzpsensor2
+O = Arrowhead
+C = EU
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = mgzpsensor2
+DNS.2 = localhost
+IP.1 = 127.0.0.1
+IP.2 = 172.17.0.1

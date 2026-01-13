@@ -6,6 +6,7 @@ import (
 	"time"
 
 	arrowhead "github.com/johankristianss/arrowhead/pkg/arrowhead"
+	//"github.com/johankristianss/arrowhead/pkg/rpc"
 )
 
 type Sensor struct {
@@ -44,11 +45,10 @@ func pollingService(framework arrowhead.Framework, sensors *Sensors, pusher *Pis
 		err = json.Unmarshal(resPsen2, &sensors.pSensor2)
 		checkError(err)
 
-		/* check vacum sensor (allways true when testing without cloud 2)
-			resVac, err := framework.SendRequest("get-sensor-status", arrowhead.EmptyParams())
-		    checkError(err)
-		    err = json.Unmarshal(resVac, &sensor.vacumSensor)
-		    checkError(err) */
+		resVac, err := framework.SendRequest("vac-get-status", arrowhead.EmptyParams())
+		checkError(err)
+		err = json.Unmarshal(resVac, &sensors.vacumSensor)
+		checkError(err)
 
 		ps1Status := sensors.pSensor1.Status
 		ps2Status := sensors.pSensor2.Status
@@ -59,7 +59,7 @@ func pollingService(framework arrowhead.Framework, sensors *Sensors, pusher *Pis
 		if esStatus == "True" && ps1Status == "True" {
 			err = pusher.startPush()
 			if err != nil {
-				//log.Fatalf(err.Error())
+				fmt.Println(err)
 			}
 			//fmt.Println("Poll successful at start")
 		}
@@ -67,21 +67,20 @@ func pollingService(framework arrowhead.Framework, sensors *Sensors, pusher *Pis
 		if ps2Status == "True" {
 			err = pusher.atEnd()
 			if err != nil {
-				//log.Fatalf(err.Error())
+				fmt.Println(err)
 			}
-			//fmt.Println("Poll successful at push")
 		}
-		if vacStatus == "True" {
+		if vacStatus == "True" && ps2Status == "True" {
 			err = pusher.startRetract()
 			if err != nil {
-				//log.Fatalf(err.Error())
+				fmt.Println(err)
 			}
-			//fmt.Println("Poll successful at end")
+
 		}
 		if esStatus == "False" && ps1Status == "True" {
 			err = pusher.atStart()
 			if err != nil {
-				//log.Fatalf(err.Error())
+				fmt.Println(err)
 			}
 			//fmt.Println("Poll successful at return")
 		}
@@ -100,7 +99,7 @@ func main() {
 		eSensor:     Sensor{Status: "False"},
 		pSensor1:    Sensor{Status: "False"},
 		pSensor2:    Sensor{Status: "False"},
-		vacumSensor: Sensor{Status: "True"},
+		vacumSensor: Sensor{Status: "False"},
 	}
 
 	piston := newPiston()
