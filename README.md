@@ -119,6 +119,7 @@ go run .
 I implemented this in go because I used the go sdk of arrowhead to create the clouds. 
 All of the providers are a simple code that connects to a modbus client, and sets what ever that clients data to its own. 
 This is supposed to mimic the sensors in a real enviorment.
+The modbusSimulations use ports 5020 to 5026 on the localhost ip address.
 
-The consumers where implmented with the same statemachines that is run on the systems plc.
-This was a little tricky in go as statemachines are implimented a bit differently in go compared so most langues, as go don't use enums. 
+The consumers were implmented with the same statemachines that is run on the systems plc.
+This was a little tricky in go as statemachines are implimented a bit differently in go compared so most languages, as go don't use enums. 
